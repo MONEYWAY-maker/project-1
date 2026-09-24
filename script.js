@@ -3,92 +3,86 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Trivia Screamdream</title>
-  <style>
-    body {
-      font-family: 'Poppins', sans-serif;
-      background: #111;
-      color: #eee;
-      text-align: center;
-      padding: 40px;
-    }
-    .question {
-      font-size: 1.5em;
-      margin-bottom: 20px;
-    }
-    .answers-mc {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    .answer-option {
-      background: #222;
-      color: #eee;
-      border: 1px solid #444;
-      padding: 10px;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-    .answer-option:hover {
-      background: #333;
-    }
-    .correct {
-      background: #2ecc71;
-      color: #000;
-    }
-    .wrong {
-      background: #e74c3c;
-      color: #000;
-    }
-    .category-buttons {
-      margin-bottom: 20px;
-    }
-    .category-buttons button {
-      margin: 5px;
-      padding: 8px 12px;
-      background: #555;
-      color: #fff;
-      border: none;
-      cursor: pointer;
-    }
-    .next-button {
-      background: #3498db;
-      color: #fff;
-      border: none;
-      padding: 10px 20px;
-      cursor: pointer;
-    }
-  </style>
+  <title>Lumos Trivia Console</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <h1>🎃 Screamdream Trivia</h1>
-  <div class="category-buttons">
-    <button data-cat="9">General Knowledge</button>
-    <button data-cat="11">Movies</button>
-    <button data-cat="17">Science</button>
-  </div>
 
-  <div class="question">Loading...</div>
-  <div class="answers-mc"></div>
-  <button class="next-button">Next Question</button>
+<body>
+  <header class="hero">
+    <h1 class="brand">LUMOS TRIVIA</h1>
+    <p class="tagline">Mission: Sharpen Cognition</p>
+  </header>
+
+  <main>
+    <!-- MILESTONE 1: Static categories section -->
+    <section class="categories">
+      <h2>Select Category</h2>
+      <div class="category-buttons">
+        <!-- Populated dynamically from API (Milestone 5) -->
+      </div>
+    </section>
+
+    <!-- MILESTONE 2: Question + Answer -->
+    <section class="quiz">
+      <h2>Question</h2>
+
+      <div class="question-box">
+        <p class="question">Loading...</p>
+      </div>
+
+      <p class="answer hidden"></p>
+
+      <div class="quiz-buttons">
+        <!-- MILESTONE 3: Show/hide answer -->
+        <button class="show-answer-button">Show Answer</button>
+
+        <!-- MILESTONE 2 & 4: Next question -->
+        <button class="next-button">Next Question</button>
+      </div>
+
+      <!-- Optional multiple-choice (Milestone 4+) -->
+      <div class="answers-mc"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Lumos Labs × NASA × Tesla</p>
+    <small>Trivia Interface v1.0</small>
+  </footer>
 
   <script>
     const questionEl = document.querySelector(".question");
+    const answerEl = document.querySelector(".answer");
     const answersBox = document.querySelector(".answers-mc");
+    const showAnswerBtn = document.querySelector(".show-answer-button");
     const nextBtn = document.querySelector(".next-button");
-    const categoryButtons = document.querySelectorAll(".category-buttons button");
+    const categoryButtonsBox = document.querySelector(".category-buttons");
 
     let currentCategory = null;
     let correctAnswer = "";
 
+    // MILESTONE 3: Show/hide answer
+    showAnswerBtn.addEventListener("click", () => {
+      if (answerEl.classList.contains("hidden")) {
+        answerEl.classList.remove("hidden");
+        showAnswerBtn.textContent = "Hide Answer";
+      } else {
+        answerEl.classList.add("hidden");
+        showAnswerBtn.textContent = "Show Answer";
+      }
+    });
+
+    // Shuffle helper
     function shuffle(array) {
       return array.sort(() => Math.random() - 0.5);
     }
 
+    // MILESTONE 4 & 6: Load question (random or by category)
     async function loadQuestion() {
       answersBox.innerHTML = "";
-      questionEl.innerHTML = "Loading...";
+      answerEl.classList.add("hidden");
+      showAnswerBtn.textContent = "Show Answer";
+      questionEl.textContent = "Loading...";
 
       const url = currentCategory
         ? `https://opentdb.com/api.php?amount=1&category=${currentCategory}`
@@ -101,7 +95,9 @@
 
         questionEl.innerHTML = q.question;
         correctAnswer = q.correct_answer;
+        answerEl.innerHTML = q.correct_answer;
 
+        // Optional multiple-choice answers
         const allAnswers = shuffle([q.correct_answer, ...q.incorrect_answers]);
 
         allAnswers.forEach(answer => {
@@ -124,18 +120,49 @@
           answersBox.appendChild(btn);
         });
       } catch (err) {
-        questionEl.innerHTML = "Error loading question. Scream again.";
+        questionEl.textContent = "Error loading question.";
+        answerEl.textContent = "";
       }
     }
 
-    categoryButtons.forEach(btn => {
-      btn.addEventListener("click", () => {
-        currentCategory = btn.dataset.cat;
-        loadQuestion();
-      });
-    });
+    // MILESTONE 5: Load categories from API
+    async function loadCategories() {
+      try {
+        const res = await fetch("https://opentdb.com/api_category.php");
+        const data = await res.json();
+        const categories = data.trivia_categories;
 
+        // "All Categories" button
+        const allBtn = document.createElement("button");
+        allBtn.textContent = "All Categories";
+        allBtn.addEventListener("click", () => {
+          currentCategory = null;
+          loadQuestion();
+        });
+        categoryButtonsBox.appendChild(allBtn);
+
+        categories.forEach(cat => {
+          const btn = document.createElement("button");
+          btn.textContent = cat.name;
+          btn.dataset.cat = cat.id;
+
+          btn.addEventListener("click", () => {
+            currentCategory = btn.dataset.cat;
+            loadQuestion();
+          });
+
+          categoryButtonsBox.appendChild(btn);
+        });
+      } catch (err) {
+        categoryButtonsBox.innerHTML = "<p>Failed to load categories.</p>";
+      }
+    }
+
+    // MILESTONE 2 & 4: Next question button
     nextBtn.addEventListener("click", loadQuestion);
+
+    // INITIAL LOAD (Milestones 1–6)
+    loadCategories();
     loadQuestion();
   </script>
 </body>
