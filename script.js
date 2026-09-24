@@ -3,51 +3,68 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lumos Trivia Console</title>
+  <meta name="description" content="Screamdreamco Trivia — Test your knowledge and sharpen your thinking." />
+  <title>Screamdreamco Trivia</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
+
   <header class="hero">
-    <h1 class="brand">LUMOS TRIVIA</h1>
-    <p class="tagline">Mission: Sharpen Cognition</p>
+    <div class="hero-content">
+      <p class="eyebrow">SCREAMDREAMCO</p>
+      <h1>Trivia</h1>
+      <p class="tagline">Challenge your knowledge. Learn something new.</p>
+    </div>
   </header>
 
   <main>
-    <!-- MILESTONE 1: Static categories section -->
+
+    <!-- CATEGORIES -->
     <section class="categories">
-      <h2>Select Category</h2>
-      <div class="category-buttons">
-        <!-- Populated dynamically from API (Milestone 5) -->
+      <div class="section-header">
+        <h2>Select a Category</h2>
+        <p>Choose a topic or explore everything.</p>
       </div>
+
+      <div class="category-buttons"></div>
     </section>
 
-    <!-- MILESTONE 2: Question + Answer -->
+    <!-- QUIZ -->
     <section class="quiz">
-      <h2>Question</h2>
+
+      <div class="section-header">
+        <span class="section-label">QUESTION</span>
+        <h2>Test Your Knowledge</h2>
+      </div>
 
       <div class="question-box">
-        <p class="question">Loading...</p>
+        <p class="question">Loading question...</p>
       </div>
 
-      <p class="answer hidden"></p>
+      <div class="answers-mc"></div>
+
+      <div class="answer-container">
+        <p class="answer hidden"></p>
+      </div>
 
       <div class="quiz-buttons">
-        <!-- MILESTONE 3: Show/hide answer -->
-        <button class="show-answer-button">Show Answer</button>
+        <button class="show-answer-button secondary-button">
+          Show Answer
+        </button>
 
-        <!-- MILESTONE 2 & 4: Next question -->
-        <button class="next-button">Next Question</button>
+        <button class="next-button primary-button">
+          Next Question
+        </button>
       </div>
 
-      <!-- Optional multiple-choice (Milestone 4+) -->
-      <div class="answers-mc"></div>
     </section>
+
   </main>
 
   <footer>
-    <p>Lumos Labs × NASA × Tesla</p>
-    <small>Trivia Interface v1.0</small>
+    <p>SCREAMDREAMCO</p>
+    <small>Trivia Interface · v1.0</small>
   </footer>
 
   <script>
@@ -61,7 +78,6 @@
     let currentCategory = null;
     let correctAnswer = "";
 
-    // MILESTONE 3: Show/hide answer
     showAnswerBtn.addEventListener("click", () => {
       if (answerEl.classList.contains("hidden")) {
         answerEl.classList.remove("hidden");
@@ -72,17 +88,15 @@
       }
     });
 
-    // Shuffle helper
     function shuffle(array) {
       return array.sort(() => Math.random() - 0.5);
     }
 
-    // MILESTONE 4 & 6: Load question (random or by category)
     async function loadQuestion() {
       answersBox.innerHTML = "";
       answerEl.classList.add("hidden");
       showAnswerBtn.textContent = "Show Answer";
-      questionEl.textContent = "Loading...";
+      questionEl.textContent = "Loading question...";
 
       const url = currentCategory
         ? `https://opentdb.com/api.php?amount=1&category=${currentCategory}`
@@ -91,79 +105,120 @@
       try {
         const res = await fetch(url);
         const data = await res.json();
+
+        if (!data.results || data.results.length === 0) {
+          throw new Error("No question available");
+        }
+
         const q = data.results[0];
 
         questionEl.innerHTML = q.question;
         correctAnswer = q.correct_answer;
         answerEl.innerHTML = q.correct_answer;
 
-        // Optional multiple-choice answers
-        const allAnswers = shuffle([q.correct_answer, ...q.incorrect_answers]);
+        const allAnswers = shuffle([
+          q.correct_answer,
+          ...q.incorrect_answers
+        ]);
 
         allAnswers.forEach(answer => {
           const btn = document.createElement("button");
+
           btn.classList.add("answer-option");
           btn.innerHTML = answer;
 
           btn.addEventListener("click", () => {
-            if (answer === correctAnswer) {
-              btn.classList.add("correct");
-            } else {
-              btn.classList.add("wrong");
-            }
 
             document.querySelectorAll(".answer-option").forEach(b => {
               b.style.pointerEvents = "none";
             });
+
+            if (answer === correctAnswer) {
+              btn.classList.add("correct");
+            } else {
+              btn.classList.add("wrong");
+
+              document.querySelectorAll(".answer-option").forEach(b => {
+                if (b.innerHTML === correctAnswer) {
+                  b.classList.add("correct");
+                }
+              });
+            }
           });
 
           answersBox.appendChild(btn);
         });
+
       } catch (err) {
-        questionEl.textContent = "Error loading question.";
+        questionEl.textContent =
+          "We couldn't load a question. Please try again.";
+
         answerEl.textContent = "";
       }
     }
 
-    // MILESTONE 5: Load categories from API
     async function loadCategories() {
       try {
-        const res = await fetch("https://opentdb.com/api_category.php");
+        const res = await fetch(
+          "https://opentdb.com/api_category.php"
+        );
+
         const data = await res.json();
         const categories = data.trivia_categories;
 
-        // "All Categories" button
         const allBtn = document.createElement("button");
+
         allBtn.textContent = "All Categories";
+        allBtn.classList.add("category-active");
+
         allBtn.addEventListener("click", () => {
           currentCategory = null;
+
+          document
+            .querySelectorAll(".category-buttons button")
+            .forEach(btn => btn.classList.remove("category-active"));
+
+          allBtn.classList.add("category-active");
+
           loadQuestion();
         });
+
         categoryButtonsBox.appendChild(allBtn);
 
         categories.forEach(cat => {
           const btn = document.createElement("button");
+
           btn.textContent = cat.name;
           btn.dataset.cat = cat.id;
 
           btn.addEventListener("click", () => {
             currentCategory = btn.dataset.cat;
+
+            document
+              .querySelectorAll(".category-buttons button")
+              .forEach(button => {
+                button.classList.remove("category-active");
+              });
+
+            btn.classList.add("category-active");
+
             loadQuestion();
           });
 
           categoryButtonsBox.appendChild(btn);
         });
+
       } catch (err) {
-        categoryButtonsBox.innerHTML = "<p>Failed to load categories.</p>";
+        categoryButtonsBox.innerHTML =
+          "<p class='error-message'>Unable to load categories.</p>";
       }
     }
 
-    // MILESTONE 2 & 4: Next question button
     nextBtn.addEventListener("click", loadQuestion);
 
-    // INITIAL LOAD (Milestones 1–6)
     loadCategories();
     loadQuestion();
   </script>
+
 </body>
 </html>
